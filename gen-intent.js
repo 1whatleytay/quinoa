@@ -12,7 +12,7 @@ function concatArr(a, b) {
 
 let base = [
   'book {event}',
-  'schedule {event}'
+  'schedule {event}',
 ]
 
 let after = [

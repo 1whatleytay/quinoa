@@ -117,6 +117,23 @@ async function resetEverything() {
   await axios.get(endpoint + '/reset')
 }
 
+function safeFormat(a, b) {
+  return a ? a.format(b) : undefined
+}
+
+function properFormat(a) {
+  const format =
+    (moment(a).year() === moment().year())
+      ? 'dddd D MMMM [at] hh:mm a' : 'dddd D MMMM YYYY [at] hh:mm a'
+
+  if (a.hour() === 0) {
+    console.log('fixed 0 issue')
+    a.hour(12)
+  }
+
+  return a.format(format)
+}
+
 async function rejectAndRetry(input, edit) {
   const userId = input.requestEnvelope.session.user.userId
 
@@ -128,6 +145,8 @@ async function rejectAndRetry(input, edit) {
   }
 
   const details = users[userId]
+  console.log('fuck4')
+  console.error(users[userId])
 
   if (!await giveSuggestion(details.tag, details.start_date, details.length, details.repeats, false)) {
     return input.responseBuilder
@@ -170,22 +189,16 @@ async function rejectAndRetry(input, edit) {
   }
 
   users[userId] = newDetails
-
-  const format =
-    (moment(newDetails.start_date).year() === moment().year())
-      ? 'dddd D MMMM [at] HH:mm' : 'dddd D MMMM YYYY [at] HH:mm'
+  console.log('fuck1')
+  console.error(users[userId])
 
   const text =
-    `How about ${moment(newDetails.start_date).format(format)} for about ${moment.duration(newDetails.length, 'minutes').humanize()}?`
+    `How about ${properFormat(moment(newDetails.start_date))} for about ${moment.duration(newDetails.length, 'minutes').humanize()}?`
 
   return input.responseBuilder
     .speak(text)
     .reprompt(text)
     .getResponse()
-}
-
-function safeFormat(a, b) {
-  return a ? a.format(b) : undefined
 }
 
 function combineTimes(a, b) {
@@ -297,17 +310,16 @@ let skill = Alexa.SkillBuilders.custom()
         start_date: guessTime,
         length: guessLength,
         repeats: 'none',
-        after: combineTimes(afterDate, afterTime),
-        by: combineTimes(byDate, byTime)
+        after: safeFormat(combineTimes(afterDate, afterTime)),
+        by: safeFormat(combineTimes(byDate, byTime))
       }
 
       users[userId] = details
-
-      const format =
-        (moment(guessTime).year() === moment().year()) ? 'dddd D MMMM [at] HH:mm' : 'dddd D MMMM YYYY [at] HH:mm'
+      console.log('fuck2')
+      console.error(users[userId])
 
       const text =
-        `How about ${safeFormat(moment(guessTime), format)} for about ${moment.duration(guessLength, 'minutes').humanize()}?`
+        `How about ${properFormat(moment(guessTime))} for about ${moment.duration(guessLength, 'minutes').humanize()}?`
 
       return input.responseBuilder
         .speak(text)
@@ -326,7 +338,7 @@ let skill = Alexa.SkillBuilders.custom()
 
     return input.responseBuilder
       .speak(`On your schedule there is ${schedule.map(e => {
-        return `${e.action} at ${moment(e.start_date).format('LLLL')}`
+        return `${e.action} at ${properFormat(moment(e.start_date))}`
       }).join(' and ')}`)
       .getResponse()
   }),
@@ -352,6 +364,8 @@ let skill = Alexa.SkillBuilders.custom()
     }
 
     const details = users[userId]
+    console.log('fuck3')
+    console.error(users[userId])
 
     if (!await giveSuggestion(details.tag, details.start_date, details.length, details.repeats, true)) {
       return input.responseBuilder
